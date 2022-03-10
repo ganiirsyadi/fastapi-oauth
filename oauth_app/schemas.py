@@ -1,4 +1,5 @@
 from typing import Optional
+from click import password_option
 from pydantic import BaseModel
 
 
@@ -15,22 +16,42 @@ class Client(ClientBase):
         orm_mode = True
 
 class UserBase(BaseModel):
-    email: str
+    username: str
 
 class UserCreate(UserBase):
     password: str
+    full_name: str
+    npm: str
     client_id: str
     client_secret: str
 
 class User(UserBase):
     id: int
+    full_name: str
+    npm: str
     class Config:
         orm_mode = True
 
-class Token(BaseModel):
+class OAuthRequest(BaseModel):
+    username: str
+    password: str
+    grant_type: str
+    client_id: str
+    client_secret: str
+
+class OAuthResponse(BaseModel):
     access_token: str
     token_type: str
     expires_in: int
-    scope: Optional[str]
     refresh_token: str
+    scope: Optional[str]
 
+class UserResource(BaseModel):
+    access_token: str
+    refresh_token: str
+    client_id: str
+    user_id: str
+    full_name: str
+    npm: str
+    expires: Optional[str]
+    
