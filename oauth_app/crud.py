@@ -5,6 +5,7 @@ from hashlib import sha256
 from .exceptions import GlobalException
 from oauth_app.utils import generate_random_string
 from . import models, schemas
+from sqlalchemy.exc import IntegrityError
 
 def get_client_by_client_id(db: Session, client_id: str):
     return db.query(models.OAuthClient).filter(models.OAuthClient.client_id == client_id).first()
@@ -48,9 +49,12 @@ def create_user(db: Session, user: schemas.UserCreate):
         full_name=user.full_name,
         npm=user.npm
     )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
+    try:
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+    except IntegrityError as e:
+        raise GlobalException(status_code=400, error="Bad Request", error_description="NPM sudah terdaftar")
     return db_user
 
 def create_user_token(db: Session, o_auth_request: schemas.OAuthRequest):

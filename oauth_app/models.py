@@ -9,7 +9,7 @@ class OAuthClient(Base):
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     client_id = Column(String(255), unique=True, nullable=False, index=True)
     client_secret = Column(String(255), unique=False, nullable=False, index=True)
-    scope = Column(String(255), unique=True, nullable=True, index=True)
+    scope = Column(String(255), unique=False, nullable=True, index=True)
 
     users = relationship("User", back_populates="client")
 
