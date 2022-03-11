@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi import FastAPI, Depends, Request
+from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 from oauth_app import database
 from oauth_app.database import SessionLocal
-from hashlib import sha256
+from .exceptions import GlobalException
 from . import crud, models, schemas
 
 models.Base.metadata.create_all(bind=database.engine)
@@ -18,6 +19,17 @@ def get_db():
     finally:
         db.close()
 
+# Exception handler
+@app.exception_handler(GlobalException)
+async def exception_handler(request: Request, exc: GlobalException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": exc.error,
+            "error_description": exc.error_description,
+        },
+    )
+
 @app.post("/clients/", response_model=schemas.Client)
 async def create_client(req: Request, db: Session = Depends(get_db)):
     client = None
@@ -28,9 +40,9 @@ async def create_client(req: Request, db: Session = Depends(get_db)):
         elif req.headers['Content-Type'] == 'application/json':
             client = schemas.ClientCreate(** await req.json())
         else:
-            raise HTTPException(status_code=400, detail="Content-Type not supported")
+            raise GlobalException(status_code=400, error="Bad Request", error_description="Content-Type not supported")
     except ValidationError:
-        raise HTTPException(status_code=400, detail="Invalid request body")
+        raise GlobalException(status_code=400, error="Bad Request", error_description="Invalid request body")
 
     return crud.create_client(db, client=client)
 
@@ -44,9 +56,9 @@ async def create_user(req: Request, db: Session = Depends(get_db)):
         elif req.headers['Content-Type'] == 'application/json':
             user = schemas.UserCreate(** await req.json())
         else:
-            raise HTTPException(status_code=400, detail="Content-Type not supported")
+            raise GlobalException(status_code=400, error="Bad Request", error_description="Content-Type not supported")
     except ValidationError:
-        raise HTTPException(status_code=400, detail="Invalid request body")
+        raise GlobalException(status_code=400, error="Bad Request", error_description="Invalid request body")
 
     return crud.create_user(db, user=user)
 
@@ -60,9 +72,9 @@ async def create_user_token(req: Request, db: Session = Depends(get_db)):
         elif req.headers['Content-Type'] == 'application/json':
             o_auth_request = schemas.OAuthRequest(** await req.json())
         else:
-            raise HTTPException(status_code=400, detail="Content-Type not supported")
+            raise GlobalException(status_code=400, error="Bad Request", error_description="Content-Type not supported")
     except ValidationError:
-        raise HTTPException(status_code=400, detail="Invalid request body")
+        raise GlobalException(status_code=400, error="Bad Request", error_description="Invalid request body")
 
     return crud.create_user_token(db, o_auth_request=o_auth_request)
 
@@ -70,9 +82,9 @@ async def create_user_token(req: Request, db: Session = Depends(get_db)):
 async def get_user_resource(req: Request, db: Session = Depends(get_db)):
     raw_access_token = req.headers.get('Authorization', None)
     if raw_access_token is None:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
+        raise GlobalException(status_code=401, error="Unauthorized", error_description="Missing Authorization header")
     elif raw_access_token.split(' ')[0] != 'Bearer':
-        raise HTTPException(status_code=401, detail="Invalid Authorization header token type")
+        raise GlobalException(status_code=401, error="Unauthorized", error_description="Invalid Authorization header token type")
 
     access_token = raw_access_token.split(' ')[1]
 
