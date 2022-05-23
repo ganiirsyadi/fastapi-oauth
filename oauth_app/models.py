@@ -13,6 +13,14 @@ class OAuthClient(Base):
 
     users = relationship("User", back_populates="client")
 
+    def __str__(self):
+        return str({
+            "id": self.id,
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "scope": self.scope
+        })
+
 class User(Base):
     __tablename__ = "users"
 
@@ -27,6 +35,15 @@ class User(Base):
     client = relationship("OAuthClient", back_populates="users")
     tokens = relationship("Token", back_populates="user")
 
+    def __str__(self) -> str:
+        return str({
+            "id": self.id,
+            "username": self.username,
+            "full_name": self.full_name,
+            "npm": self.npm,
+            "client_id": self.client_id
+        })
+
 class Token(Base):
     __tablename__ = "tokens"
 
@@ -37,3 +54,12 @@ class Token(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     user = relationship("User", back_populates="tokens")
+
+    def __str__(self) -> str:
+        return str({
+            "id": self.id,
+            "access_token": self.access_token,
+            "refresh_token": self.refresh_token,
+            "token_expiration": self.token_expiration,
+            "user_id": self.user_id
+        })
